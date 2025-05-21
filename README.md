@@ -1,11 +1,19 @@
+
 PHP Password Manager – Task 1
 
 This is the first task of a step-by-step PHP OOP password manager project.
 
- Task 1:
+Task 1:
+
 - Registration form
 - User class with password hashing
 - MySQL database connection
 
 Task 2:
+
 - Add encrypted key generation for users
+
+Task 3:
+
+- Add password generator class and form
+
