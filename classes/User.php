@@ -10,10 +10,10 @@ class User {
     public function register($username, $password) {
         $hash = password_hash($password, PASSWORD_BCRYPT);
 
-        $bytes = openssl_random_pseudo_bytes(16);
-        $rawKey = bin2hex($bytes);
-
+        $rawKey = bin2hex(openssl_random_pseudo_bytes(16));
         $encryptedKey = openssl_encrypt($rawKey, 'AES-128-ECB', $password);
+
+        $encodedKey = base64_encode($encryptedKey);
 
         $stmt = $this->conn->prepare("INSERT INTO {$this->table} 
             (username, password_hash, encryption_key) 
@@ -21,8 +21,32 @@ class User {
 
         $stmt->bindParam(':username', $username);
         $stmt->bindParam(':password', $hash);
-        $stmt->bindParam(':encryption_key', $encryptedKey);
+        $stmt->bindParam(':encryption_key', $encodedKey);
 
         return $stmt->execute();
     }
+
+    public function getRawKey($username, $plainPassword) {
+        $stmt = $this->conn->prepare("SELECT encryption_key FROM {$this->table} WHERE username = :username");
+        $stmt->bindParam(':username', $username);
+        $stmt->execute();
+
+        if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+
+            $encryptedKey = base64_decode($row['encryption_key']);
+
+            $raw = openssl_decrypt($encryptedKey, 'AES-128-ECB', $plainPassword);
+            
+            if (!$raw) {
+                echo "<p style='color:red'>❌ Decryption failed. Wrong password?</p>";
+            } else {
+                echo "<p style='color:green'>✅ Key OK</p>";
+            }
+
+            return $raw;
+        }
+
+        return null;
+    }
 }
+

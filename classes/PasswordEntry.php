@@ -7,15 +7,17 @@ class PasswordEntry {
         $this->conn = $db;
     }
 
-    public function save($serviceName, $password) {
+    public function saveEncrypted($serviceName, $plainPassword, $encryptionKey) {
+
+        $encryptedPassword = openssl_encrypt($plainPassword, 'AES-128-ECB', $encryptionKey);
+
         $stmt = $this->conn->prepare("INSERT INTO {$this->table} 
             (service_name, password_value) 
             VALUES (:service_name, :password_value)");
 
         $stmt->bindParam(':service_name', $serviceName);
-        $stmt->bindParam(':password_value', $password);
+        $stmt->bindParam(':password_value', $encryptedPassword);
 
         return $stmt->execute();
     }
 }
-
