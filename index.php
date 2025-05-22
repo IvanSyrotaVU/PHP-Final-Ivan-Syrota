@@ -10,9 +10,11 @@ $passwordEntry = new PasswordEntry($db);
 
 $generatedPassword = '';
 $passwordSavedMessage = '';
+$passwordList = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
+    // Генерация пароля
     if (isset($_POST['generate'])) {
         $length    = isset($_POST['length']) ? (int)$_POST['length'] : 10;
         $lowercase = isset($_POST['lowercase']) ? (int)$_POST['lowercase'] : 2;
@@ -23,20 +25,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $gen = new PasswordGenerator($length, $lowercase, $uppercase, $digits, $specials);
         $generatedPassword = $gen->generate();
 
+        // Регистрация
     } elseif (isset($_POST['register'])) {
         $username = isset($_POST['username']) ? $_POST['username'] : '';
         $password = isset($_POST['password']) ? $_POST['password'] : '';
 
         if (!empty($username) && !empty($password)) {
             if ($user->register($username, $password)) {
-                echo "User registered successfully!";
+                echo "✅ User registered successfully!";
             } else {
-                echo "Registration failed.";
+                echo "❌ Registration failed.";
             }
         } else {
-            echo "All fields are required.";
+            echo "⚠️ All fields are required.";
         }
 
+        // Сохранение пароля
     } elseif (isset($_POST['save_password'])) {
         $service         = isset($_POST['service']) ? $_POST['service'] : '';
         $passwordToSave  = isset($_POST['password_to_save']) ? $_POST['password_to_save'] : '';
@@ -45,24 +49,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!empty($service) && !empty($passwordToSave) && !empty($username) && !empty($user_password)) {
             $key = $user->getRawKey($username, $user_password);
-
             if ($key) {
                 if ($passwordEntry->saveEncrypted($service, $passwordToSave, $key)) {
-                    $passwordSavedMessage = "Encrypted password saved for $service.";
+                    $passwordSavedMessage = "✅ Encrypted password saved for $service.";
                 } else {
-                    $passwordSavedMessage = "Failed to save encrypted password.";
+                    $passwordSavedMessage = "❌ Failed to save encrypted password.";
                 }
             } else {
-                $passwordSavedMessage = "Could not retrieve encryption key. Check login data.";
+                $passwordSavedMessage = "❌ Could not retrieve encryption key. Check login data.";
             }
         } else {
-            $passwordSavedMessage = "All fields are required.";
+            $passwordSavedMessage = "⚠️ All fields are required.";
+        }
+
+        // Просмотр всех паролей
+    } elseif (isset($_POST['view_passwords'])) {
+        $username      = isset($_POST['view_username']) ? $_POST['view_username'] : '';
+        $user_password = isset($_POST['view_password']) ? $_POST['view_password'] : '';
+
+        if (!empty($username) && !empty($user_password)) {
+            $key = $user->getRawKey($username, $user_password);
+            if ($key) {
+                $passwordList = $passwordEntry->getAllDecrypted($key);
+            } else {
+                echo "<p style='color:red'>❌ Could not decrypt KEY.</p>";
+            }
+        } else {
+            echo "<p style='color:red'>⚠️ All fields are required.</p>";
         }
     }
 }
 ?>
 
-<!-- HTML FORMS -->
+<!-- === HTML SECTION === -->
+
 <h2>User Registration</h2>
 <form method="POST">
     <label>Username: <input type="text" name="username" required /></label><br><br>
@@ -99,4 +119,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <?php if (!empty($passwordSavedMessage)): ?>
     <p><?php echo $passwordSavedMessage; ?></p>
+<?php endif; ?>
+
+<hr>
+
+<h2>Show My Passwords</h2>
+<form method="POST">
+    <label>Your Username: <input type="text" name="view_username" required /></label><br><br>
+    <label>Your Password: <input type="password" name="view_password" required /></label><br><br>
+    <button type="submit" name="view_passwords">Show Passwords</button>
+</form>
+
+<?php if (!empty($passwordList)): ?>
+    <h3>Saved Passwords</h3>
+    <table border="1" cellpadding="8">
+        <tr>
+            <th>Service</th>
+            <th>Password</th>
+            <th>Saved At</th>
+        </tr>
+        <?php foreach ($passwordList as $entry): ?>
+            <tr>
+                <td><?php echo htmlspecialchars($entry['service']); ?></td>
+                <td><?php echo htmlspecialchars($entry['password']); ?></td>
+                <td><?php echo htmlspecialchars($entry['created_at']); ?></td>
+            </tr>
+        <?php endforeach; ?>
+    </table>
 <?php endif; ?>
