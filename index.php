@@ -2,11 +2,14 @@
 require_once 'config/database.php';
 require_once 'classes/User.php';
 require_once 'classes/PasswordGenerator.php';
+require_once 'classes/PasswordEntry.php';
 
 $db = (new Database())->connect();
 $user = new User($db);
+$passwordEntry = new PasswordEntry($db);
 
 $generatedPassword = '';
+$passwordSavedMessage = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['generate'])) {
@@ -32,6 +35,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } else {
             echo "All fields are required.";
+        }
+    } elseif (isset($_POST['save_password'])) {
+        $service = isset($_POST['service']) ? $_POST['service'] : '';
+        $passwordToSave = isset($_POST['password_to_save']) ? $_POST['password_to_save'] : '';
+
+        if (!empty($service) && !empty($passwordToSave)) {
+            if ($passwordEntry->save($service, $passwordToSave)) {
+                $passwordSavedMessage = "Password saved for $service.";
+            } else {
+                $passwordSavedMessage = "Failed to save password.";
+            }
+        } else {
+            $passwordSavedMessage = "Fill in both fields.";
         }
     }
 }
@@ -81,4 +97,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <?php if (!empty($generatedPassword)): ?>
     <p><strong>Generated Password:</strong> <?= htmlspecialchars($generatedPassword) ?></p>
+<?php endif; ?>
+
+<hr>
+
+<h2>Save Password</h2>
+<form method="POST">
+    <label>
+        Service Name:
+        <input type="text" name="service" required />
+    </label><br><br>
+
+    <label>
+        Password to Save:
+        <input type="text" name="password_to_save" required />
+    </label><br><br>
+
+    <button type="submit" name="save_password">Save Password</button>
+</form>
+
+<?php if (!empty($passwordSavedMessage)): ?>
+    <p><?= $passwordSavedMessage ?></p>
 <?php endif; ?>
