@@ -1,7 +1,7 @@
 
-PHP Password Manager – Task 1
+PHP Password Manager - FINAL VERSION
 
-This is the first task of a step-by-step PHP OOP password manager project.
+This is the PHP final project "password manager".
 
 Task 1:
 
@@ -17,3 +17,14 @@ Task 3:
 
 - Add password generator class and form
 
+Task 4:
+
+– Added save passwords to Database
+
+Task 5:
+
+– Added encrypt passwords using user-specific key
+
+Task 6:
+
+ – Add View & Decrypt saved passwords
